@@ -26,6 +26,7 @@ class graph {
         int _cur_idx;
         bool bfs(std::vector<bool>& visited, int idx, bool col) {
             visited[idx] = true;
+            _cols[idx] = col;
             for(int i: _nodes[idx].adj) {
                 if(!visited[i]) {
                     if(!bfs(visited, i, !col)) {
