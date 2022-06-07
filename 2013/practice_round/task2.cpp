@@ -1,15 +1,12 @@
 #include <iostream>
-// better way?
 #include <cmath>
 
 // g = 9.8, no air res
 // particle at O moves at speed V, angle theta from horizontal, and lands horizontal dist D away from O.
 // get theta in degrees.
 
-// tan^2 + 1 = sec^2
-// V*cos(th)*T = D -> T = D/(V*sin(th)).
-// 0 = -0.5*g*T^2 + V*sin(th)*T -> 0 = (-0.5*g*D^2/V^2)*sec^2(th) + V*tan(th).
-// (-0.5*g*D^2/V^2)*tan^2(th) + V*tan(th) + (-0.5*g*D^2/V^2) = 0.
+// From algebra + trig:
+// (-0.5*g*D^2/V^2)*tan^2(th) + D*tan(th) + (-0.5*g*D^2/V^2) = 0.
 
 constexpr double PI = 3.14159265358979323846;
 
@@ -18,18 +15,26 @@ void read_input(int& V, int& D) {
 }
 
 double solve(int V, int D) {
-    double th, th_rad;
+    double th, th_rad, tan_th;
     double g = 9.8;
     double A, B, C;
-    A = -0.5*g*D*D/(V*V), B = V, C = A;
-    th_rad = std::atan((B + std::sqrt(B*B - 4*A*C))/(2*A));
-    th = 2*PI*th_rad/360;
+    A = -g*D*D/(2*V*V), B = D, C = A;
+    double disc = B*B - 4*A*C;
+    // may get disc < 0 through floating point precision errors, just correct as can
+    // assume all cases soluble.
+    if(disc < 0) 
+        disc = 0;
+    tan_th = (-B + std::sqrt(disc))/(2*A);
+    th_rad = std::atan(tan_th);
+    th = 360*th_rad/(2*PI);
     return th;
 }
 
 int main() {
     int ncases;
     std::cin >> ncases;
+    // iostream ugh, precision is number of digits after the decimal point.
+    std::cout.precision(15);
     for(int i=1; i<=ncases; i++) {
         // I'm assuming V and D are always integers.
         int V, D;
