@@ -4,41 +4,60 @@
 
 # can we read line by line? how do we know when we're at the end of the file? get EOFError
 
+def find_first(s, sub1, sub2, i):
+    j, k = s.find(sub1, i), s.find(sub2, i)
+    if j == -1 and k == -1:
+        return -1
+    else:
+        if j == -1:
+            return k
+        if k == -1:
+            return j
+        return min(j,k)
+
 # you can get a /*/ split across two lines, but still part of a comment.
 def main():
     print("Case #1:")
     try:
-        level = 0
+        cur_lvl = 0
         while True:
-            # use python string manipulation
             line = input()
-            keep = [True]*len(line)
+            level = [None]*len(line)
             i_last = 0
-            level = 0
-            i = min(line.find("/*"), line.find("*/"))
+            i = find_first(line, "/*", "*/", 0)
             while i != -1:
-                print(i)
-                for j in range(i_last,i):
-                    if level > 0:
-                        keep[j] = False
+                for j in range(i_last, i):
+                    level[j] = cur_lvl
                 if line[i] == "/":
-                    keep[i] = False
-                    level += 1
-                if line[i] == "*":
-                    # avoid file starting with */ before a /*, and /*/
-                    if level > 0 and i != i_last + 1:
-                        level -= 1
-                i_last = i
-                i = min(line.find("/*", i_last+1), line.find("*/", i_last+1))
+                    cur_lvl += 1
+                    level[i], level[i+1] = cur_lvl, cur_lvl
+                    i += 1
+                # we may get leading */ outside of any comment, if we are outside this may be the start of a /*
+                elif line[i] == "*":
+                    if cur_lvl > 0:
+                        level[i], level[i+1] = cur_lvl, cur_lvl
+                        cur_lvl -= 1
+                        i += 1
+                    else:
+                        level[i] = cur_lvl
+                i_last = i + 1
+                i = find_first(line, "/*", "*/", i_last)
+            # fill in remaining levels in the line (if necessary)
+            for j in range(i_last, len(line)):
+                level[j] = cur_lvl
             out_line = ""
             for i in range(len(line)):
-                if keep[i]:
+                if level[i] == 0:
                     out_line += line[i]
-            if keep[len(line)-1]:
-                print(out_line)
-            else:
+            # if we end still in a comment skip the newline as well, watch out for "\n" lines.
+            if len(line) == 0:
+                # (!) if we are inside a comment we don't want the newline (!) - now passes both test cases.
+                if not cur_lvl > 0:
+                    print("")
+            elif cur_lvl > 0:
                 print(out_line, end='')
-
+            else:
+                print(out_line)
     except EOFError as e:
         pass
 
