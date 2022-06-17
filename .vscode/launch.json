@@ -4,6 +4,8 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
+
         {
             "name": "(Windows) Launch 2013 task1",
             "type": "cppvsdbg",
@@ -14,7 +16,50 @@
             "cwd": "${fileDirname}",
             "environment": [],
             "console": "externalTerminal"
+        },
+        {
+            "name": "(Windows) Launch 2013 task2",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/2013/practice_round/build/Debug/task2.exe",
+            "args": ["<", "${workspaceFolder}/2013/practice_round/data2.txt"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "console": "externalTerminal"
+        },
+        {
+            "name": "(Windows) Launch 2013 task3",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/2013/practice_round/build/Debug/task3.exe",
+            "args": ["<", "${workspaceFolder}/2013/practice_round/data3.txt"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "console": "externalTerminal"
+        },
+        {
+            "name": "(Windows) Launch 2013_A task1",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/2013/roundA/build/Debug/task1.exe",
+            "args": ["<", "${workspaceFolder}/2013/roundA/data1.txt"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "console": "externalTerminal"
+        },
+        {
+            "name": "(Windows) Launch 2013_A task3",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/2013/roundA/build/Debug/task3.exe",
+            "args": ["<", "${workspaceFolder}/2013/roundA/data3_1.txt"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "console": "externalTerminal"
         }
-
     ]
 }

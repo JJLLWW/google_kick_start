@@ -5,72 +5,78 @@
 
 # get 1 <= S <= 100 "soldiers"
 
-# strategy part 1, compress groups of rooms that are the same color into single rooms.
+# colored directed weighted graph, compress nodes with same color into single nodes.
+# now can find shortest path between any pair of nodes using Dijkstra's algorithm.
 
-# colors from room, rooms from color
-cfr = dict()
-rfc = dict()
+# weighted directed edge
+class wdedge:
+    def __init__(self, src, dest, w):
+        self.src = src
+        self.dest = dest
+        self.w = w
 
-def add_room(i, col):
-    if col not in rfc.keys():
-        rfc[col] = [i]
-    else:
-        rfc[col].append(i)
-
-def add_edge(list, a, b, t):
-    if list[a] == None:
-        list[a] = [(b, t)]
-    else:
-        list[a].append((b, t))
-
-# there may be multiple edges from different compressed nodes, but we only care about 1 which
-# is <= all others.
-def compress_edges(WEO):
-    WEC = dict()
-    for i in range(len(WEO)):
-        if WEO != None:
-            for j, t in WEO:
-                s, e = cfr[i], cfr[j]
-                if (s, e) not in WEC.keys():
-                    WEC[(s,e)] = t
-                elif t < WEC[(s,e)]:
-                    WEC[(s,e)] = t
-    return WEC
-
-def solve(WEO, sols):
-    # first we need to get weighted edges from original rooms into weighted edges
-    # from compressed nodes + convert dest and output nodes into colors.
-    WEC = compress_edges(WEO)
-    # We might as well run Dijsktras algorithm on the entire graph at all times.
-
-    return None    
+# this is the compressed graph
+class wdgraph:
+    def __init__(self):
+        # color from index, indeces from color
+        self.cfi = dict()
+        self.ifc = dict()
+        self.nodes = set()
+        self.adj = dict()
+        self.adjw = dict()
+    def add_node(self, i, col):
+        self.nodes.add(col)
+        self.adj[col] = set()
+        # ti <= 1000
+        self.adjw[col] = float("inf")
+        self.cfi[i] = col
+        if col not in self.ifc.keys():
+            self.ifc[col] = [i]
+        else:
+            self.ifc[col].append(i)
+    def add_edge(self, i_src, i_dest, w):
+        c_from, c_to = self.cfi(i_src), self.cfi(i_dest)
+        self.adj[c_from].add(c_to)
+        if w < self.adjw[c_from]:
+            self.adjw[c_from] = w
+    # use Dijsktra's algorithm to get the shortest dist
+    def min_dist(self, i, j):
+        ci, cj = self.cfi(i), self.cfi(j)
+        dists = dict()
+        for v in self.nodes:
+            dists[v] = float("inf")
+        Q = self.nodes
+        dists[i] = 0
+        while len(Q) != 0:
+            u = min(dists)
+            Q.remove(u)
+            for v in self.adj[u]:
+                if v in Q:
+                    pass
+        
 
 def main():
     T = int(input())
     for case in range(1, T+1):
-        N = int(input()) # num rooms from 1 to N
-        # room colors, strings len 1 or 2 consisting of a-z and 0-9
-        tlifts, sols = [], []
-        for i in range(N):
+        N = int(input())
+        g = wdgraph()
+        for i in range(1, N+1):
             col = input()
-            cfr[i] = col
-            add_room(i, col)
-        M = int(input()) # num turbolifts
-        # weighted (directed) edges, between different nodes of the original graph, WE[1] = [(2, t), (3, T)]
-        # if directed edge from 1 to 2 with time t + directed edge from 1 to 3 with time T
-        WEO = [None]*(N+1)
+            g.add_node(i, col)
+        M = int(input())
         for _ in range(M):
             words = input().split()
             a, b, t = [int(word) for word in words]
-            add_edge(WEO, a, b, t)
-        S = int(input()) # num soldiers
+            g.add_edge(a, b, t)
+        S = int(input())
+        sols = []
         for _ in range(S):
             words = input().split()
             p, q = [int(word) for word in words]
-            sols.append((p, q))
-        times = solve(WEO, sols)
+            sols.append([p, q])
         print(f"Case #{case}:")
-        for time in times:
-            print(time)
+        for p, q in sols:
+            d = g.min_dist(p, q)
+            print(d)
 
 main()
