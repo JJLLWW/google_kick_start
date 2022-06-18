@@ -15,7 +15,8 @@ class wdedge:
         self.dest = dest
         self.w = w
 
-# this is the compressed graph
+# this is the compressed graph, once get num nodes, just store the distance between each in
+# a 2D table, inf if no edge.
 class wdgraph:
     def __init__(self):
         # color from index, indeces from color
@@ -23,37 +24,50 @@ class wdgraph:
         self.ifc = dict()
         self.nodes = set()
         self.adj = dict()
-        self.adjw = dict()
+        self.edgew = dict()
     def add_node(self, i, col):
         self.nodes.add(col)
         self.adj[col] = set()
-        # ti <= 1000
-        self.adjw[col] = float("inf")
         self.cfi[i] = col
         if col not in self.ifc.keys():
             self.ifc[col] = [i]
         else:
             self.ifc[col].append(i)
+    def init_weights(self):
+        for c1 in self.ifc.keys():
+            for c2 in self.ifc.keys():
+                self.edgew[(c1, c2)] = float("inf")
+    # ??
     def add_edge(self, i_src, i_dest, w):
-        c_from, c_to = self.cfi(i_src), self.cfi(i_dest)
+        c_from, c_to = self.cfi[i_src], self.cfi[i_dest]
         self.adj[c_from].add(c_to)
-        if w < self.adjw[c_from]:
-            self.adjw[c_from] = w
+        if w < self.edgew[(c_from, c_to)]:
+            self.edgew[(c_from, c_to)] = w
+    def log(self):
+        print(self.nodes, self.edgew, self.adj)
     # use Dijsktra's algorithm to get the shortest dist
     def min_dist(self, i, j):
-        ci, cj = self.cfi(i), self.cfi(j)
+        ci, cj = self.cfi[i], self.cfi[j]
         dists = dict()
+        Q = set()
         for v in self.nodes:
             dists[v] = float("inf")
-        Q = self.nodes
-        dists[i] = 0
+            Q.add(v)
+        dists[ci] = 0
         while len(Q) != 0:
-            u = min(dists)
+            # get vertex with min dist in Q
+            u, dst = None, float("inf")
+            for v in Q:
+                if dists[v] <= dst:
+                    u, dst = v, dists[v]
             Q.remove(u)
             for v in self.adj[u]:
                 if v in Q:
-                    pass
-        
+                    alt = dists[u] + self.edgew[(u, v)]
+                    if alt < dists[v] and dists[u] != float("inf"):
+                        dists[v] = alt
+        d = dists[cj] if dists[cj] != float("inf") else -1
+        return d  
 
 def main():
     T = int(input())
@@ -63,6 +77,7 @@ def main():
         for i in range(1, N+1):
             col = input()
             g.add_node(i, col)
+        g.init_weights()
         M = int(input())
         for _ in range(M):
             words = input().split()
