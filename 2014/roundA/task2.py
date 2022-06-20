@@ -9,7 +9,7 @@
 
 import functools as ft
 
-# each digit 0-9 as a state
+# each digit 0-9 as a state, CHECK FOR MISTAKES
 state_dig = [
     # 0 - ABCDEF - 0b1111,110
     0b1111110,
@@ -19,8 +19,8 @@ state_dig = [
     0b1101101,
     # 3 - ABGCD - ABCDG
     0b1111001,
-    # 4 - BGFC - BCFD
-    0b0111010,
+    # 4 - BGFC - BCFG
+    0b0110011,
     # 5 - AFGCD - ACDFG
     0b1011011,
     # 6 - AFGDCE
@@ -33,47 +33,79 @@ state_dig = [
     0b1111011
 ]
 
-# can get the correct number but doesn't represent it as bars correctly.
-# need to also figure out which segments are working or broken.
-def solve(states):
-    # get a bitmask of all segments we know are working
-    working = ft.reduce(lambda x, y: x|y, states)
-    broken = 0 # segments we KNOW are broken.
-    valid_nums = []
-    # possible values for this state.
-    pos_vals = [i for i in range(10)]
-    for state in states:
-        valid = []
-        # do the segments of this integer match what we know we have from the
-        # known working segments?
-        seen = working & state
-        for i in pos_vals:
-            if seen == state_dig[i] & working:
-                valid.append(i)
-        if valid == []:
-            return None
-        pos_vals = [(v-1)%10 for v in valid]
-        valid_nums.append(valid)
-        # bitmask of segments which should be on for all possible values.
-        common = ft.reduce(lambda x, y: x&y, valid)
-        new_working = common & state
-        new_broken = common & (~state)
-        print(bin(new_working), bin(new_broken))
-        working |= new_working
-        broken |= new_broken
-    print(valid_nums, bin(working), bin(broken))
-    if len(valid_nums[-1]) > 1:
-        return None
-    else: # unique sol
-        val = (valid_nums[-1][0] - 1)%10
-        print(val)
-        val_as_state = state_dig[val]
-        # we don't have enough information to know how this value will be represented
-        if val_as_state & (working | broken) != val_as_state:
+def cyclic_dec(x):
+    return (x-1)%10
+
+def or_all(l):
+    return ft.reduce(lambda x, y: x|y, l)
+
+def and_all_dig(l):
+    return ft.reduce(lambda x, y: x&y, [state_dig[d] for d in l])
+
+def get_pos_vals(state, working):
+    pvals = set()
+    for d in range(10):
+        d_state = state_dig[d]
+        # we can work out which bits should be on for this number.
+        on_in_num = d_state & working
+        on_in_state = state & working
+        if on_in_num == on_in_state:
+            pvals.add(d)
+    return pvals
+
+def solve(states, N):
+    # we know a segment that is active in any state must be working.
+    working = or_all(states)
+    # we can gradually infer which segments are broken
+    broken = 0
+    broken_old = None
+    # pos_vals[i] possible values state i could represent
+    pos_vals = [set() for i in range(N)]
+    pos_vals_old = None
+    # when to break out? will this always only take 1 pass? THIS MAY BE BUGGED
+    while pos_vals != pos_vals_old and broken != broken_old:
+        for i in range(N):
+            pos_vals[i] = get_pos_vals(states[i], working)
+            # remove those inconsistent with the last obtained values
+            if i != 0:
+                rm_vals, rm_vals_prev = [], []
+                for val in pos_vals[i]:
+                    if val+1 not in pos_vals[i-1]:
+                        rm_vals.append(val)
+                for val in pos_vals[i-1]:
+                    if val-1 not in pos_vals[i]:
+                        rm_vals_prev.append(val)
+                for rval in rm_vals:
+                    pos_vals[i].remove(rval)
+                for rval in rm_vals_prev:
+                    pos_vals[i-1].remove(rval)
+            # may be no possible values, don't want to continue.
+            if pos_vals[i] == set():
+                return None
+            # deduce if any more segments are broken, if a segment not equal
+            # to a known working one is on in all possible values, then that segment
+            # must be broken.
+            on_in_all = and_all_dig(pos_vals[i])
+            # this need not be positive (BUGGED)
+            new_on = on_in_all & ~working
+            broken_old = broken
+            broken |= new_on
+            pos_vals_old = pos_vals
+        # we may still not have enough information to determine the next digits value
+        for pval_set in pos_vals:
+            if len(pval_set) > 1:
+                return None
+        next_val = pos_vals[-1].pop() - 1
+        nv_state = state_dig[next_val]
+        known_bits = working | broken
+        # even if we know the next value, if we don't know whether a segment needed to 
+        # represent it is working or broken we don't know how to represent it.
+        if known_bits & nv_state != nv_state:
             return None
         else:
-            return val_as_state & working
-
+            # does this work?
+            return nv_state & working
+        
 def main():
     ncases = int(input())
     for case in range(1, ncases+1):
@@ -82,10 +114,10 @@ def main():
         states = []
         for word in words[1:]:
             states.append(int(word, base=2))
-        res = solve(states)
+        res = solve(states, N)
         if res is None:
             print(f"Case #{case}: ERROR!")
         else:
-            print(f"Case #{case}: {bin(res)[2:]}")
+            print(f"Case #{case}: {bin(res)[2:].zfill(7)}")
 
 main()
