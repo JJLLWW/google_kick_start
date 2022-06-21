@@ -59,9 +59,8 @@ def get_pos_vals(state, working):
             pvals.add(d)
     return pvals
 
-def rm_bad_vals(i, pos_vals):
+def rm_bad_adj(pos_vals, i):
     rm_vals, rm_vals_prev = [], []
-    # BUG: these increments and decrements should be cyclic.
     for val in pos_vals[i]:
         if cyclic_inc(val) not in pos_vals[i-1]:
             rm_vals.append(val)
@@ -73,36 +72,38 @@ def rm_bad_vals(i, pos_vals):
     for rval in rm_vals_prev:
         pos_vals[i-1].remove(rval)
 
+def rm_bad_vals(pos_vals, N):
+    if N == 1:
+        return
+    pos_vals_old = None
+    while pos_vals != pos_vals_old:
+        pos_vals_old = copy.deepcopy(pos_vals)
+        for i in range(1,N):
+            rm_bad_adj(pos_vals, i)
+
+# If a segment not equal to a known working one is on in all possible values, then that segment
+# must be broken.
+def get_broken_segs(pos_vals, N, working):
+    broken = 0
+    for i in range(N):
+        on_in_all = and_all_dig(pos_vals[i])
+        new_on = on_in_all & ~working
+        broken |= new_on
+    return broken
+
 def solve(states, N):
     # we know a segment that is active in any state must be working.
     working = or_all(states)
     # we can gradually infer which segments are broken
-    broken = 0
     broken_old = None
-    # pos_vals[i] possible values state i could represent
-    pos_vals = [set() for i in range(N)]
-    pos_vals_old = None
-    # this condition should be sufficient to know we can't get any more information.
-    while not (pos_vals == pos_vals_old and broken == broken_old):
-        pos_vals_old = copy.deepcopy(pos_vals)
-        broken_old = broken
-        for i in range(N):
-            pos_vals[i] = get_pos_vals(states[i], working)
-            # remove those inconsistent with the last obtained values.
-            if i != 0:
-                rm_bad_vals(i, pos_vals)
-            # may be no possible values, don't want to continue.
-            if pos_vals[i] == set():
-                return None
-            # deduce if any more segments are broken, if a segment not equal
-            # to a known working one is on in all possible values, then that segment
-            # must be broken.
-            on_in_all = and_all_dig(pos_vals[i])
-            new_on = on_in_all & ~working
-            broken |= new_on
+    # possible values each state (in isolation) could represent.
+    pos_vals = [get_pos_vals(states[i], working) for i in range(N)]
+    # remove obviously impossible values, eg. [{3}, {9}]
+    rm_bad_vals(pos_vals, N)
+    broken = get_broken_segs(pos_vals, N, working)
     # we may still not have enough information to determine the next digits value
     for pval_set in pos_vals:
-        if len(pval_set) > 1:
+        if len(pval_set) != 1:
             return None
     next_val = cyclic_dec(pos_vals[-1].pop())
     nv_state = state_dig[next_val]

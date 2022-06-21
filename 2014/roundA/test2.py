@@ -3,9 +3,9 @@
 import task2
 
 def main():
-    l = [set([0]), set([9])]
+    l = [{8, 7, 6}, {6, 5}, {4}]
     print(l)
-    task2.rm_bad_vals(1, l)
+    task2.rm_bad_vals(l, 3)
     print(l)
 
 main()
