@@ -45,6 +45,9 @@ def cyclic_inc(x):
 def or_all(l):
     return ft.reduce(lambda x, y: x|y, l)
 
+def and_all(l):
+    return ft.reduce(lambda x, y: x&y, l)
+
 def and_all_dig(l):
     return ft.reduce(lambda x, y: x&y, [state_dig[d] for d in l])
 
@@ -81,43 +84,56 @@ def rm_bad_vals(pos_vals, N):
         for i in range(1,N):
             rm_bad_adj(pos_vals, i)
 
-# If a segment not equal to a known working one is on in all possible values, then that segment
-# must be broken.
+# BUGGED, instead should consider all possible sequences, if a segment that we
+# don't see working is on in one number of every sequence, it must be broken.
 def get_broken_segs(pos_vals, N, working):
     broken = 0
-    for i in range(N):
-        on_in_all = and_all_dig(pos_vals[i])
-        new_on = on_in_all & ~working
-        broken |= new_on
+    nseq = len(pos_vals[0])
+    seqs = [set() for i in range(nseq)]
+    active = [0]*nseq
+    i = 0
+    for start in pos_vals[0]:
+        for j in range(N):
+            seqs[i].add(state_dig[start])
+            start = cyclic_dec(start)
+        active[i] = or_all(seqs[i])
+        i += 1
+    on_in_all = and_all(active)
+    new_on = on_in_all & ~working
+    broken |= new_on
     return broken
 
 def solve(states, N):
     # we know a segment that is active in any state must be working.
     working = or_all(states)
-    # we can gradually infer which segments are broken
-    broken_old = None
-    # possible values each state (in isolation) could represent.
     pos_vals = [get_pos_vals(states[i], working) for i in range(N)]
-    # remove obviously impossible values, eg. [{3}, {9}]
     rm_bad_vals(pos_vals, N)
-    broken = get_broken_segs(pos_vals, N, working)
-    # we may still not have enough information to determine the next digits value
     for pval_set in pos_vals:
-        if len(pval_set) != 1:
+        if len(pval_set) == 0:
             return None
-    next_val = cyclic_dec(pos_vals[-1].pop())
-    nv_state = state_dig[next_val]
+    broken = get_broken_segs(pos_vals, N, working)
+    next_vals = [cyclic_dec(val) for val in pos_vals[-1]]
+    nv_states = [state_dig[v] for v in next_vals]
     known_bits = working | broken
-    # even if we know the next value, if we don't know whether a segment needed to 
-    # represent it is working or broken we don't know how to represent it.
-    if known_bits & nv_state != nv_state:
-        return None
-    else:
-        return nv_state & working
+    for nv_state in nv_states:
+        # we don't know how to represent one of the states, so impossible
+        if known_bits & nv_state != nv_state:
+            return None
+    # are all of the representations equal?
+    repr = nv_states[0] & working
+    for i in range(1,len(nv_states)):
+        repr_i = nv_states[i] & working
+        if repr_i != repr:
+            return None
+    return repr
         
 def main():
     ncases = int(input())
     for case in range(1, ncases+1):
+        # DEBUG
+        if case == 8:
+            pass
+            # breakpoint()
         words = input().split()
         N = int(words[0])
         states = []
