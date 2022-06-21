@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 # digit displayed by 7 segments. A single "display" is just the 7 segments.
 # segments labelled A - B - ... - G.
 
@@ -7,6 +9,7 @@
 # each state is some 1 digit number [0-9], states are a cyclically decreasing sequence
 # of numbers.
 
+import copy
 import functools as ft
 
 # each digit 0-9 as a state, CHECK FOR MISTAKES
@@ -36,6 +39,9 @@ state_dig = [
 def cyclic_dec(x):
     return (x-1)%10
 
+def cyclic_inc(x):
+    return (x+1)%10
+
 def or_all(l):
     return ft.reduce(lambda x, y: x|y, l)
 
@@ -53,6 +59,20 @@ def get_pos_vals(state, working):
             pvals.add(d)
     return pvals
 
+def rm_bad_vals(i, pos_vals):
+    rm_vals, rm_vals_prev = [], []
+    # BUG: these increments and decrements should be cyclic.
+    for val in pos_vals[i]:
+        if cyclic_inc(val) not in pos_vals[i-1]:
+            rm_vals.append(val)
+    for val in pos_vals[i-1]:
+        if cyclic_dec(val) not in pos_vals[i]:
+            rm_vals_prev.append(val)
+    for rval in rm_vals:
+        pos_vals[i].remove(rval)
+    for rval in rm_vals_prev:
+        pos_vals[i-1].remove(rval)
+
 def solve(states, N):
     # we know a segment that is active in any state must be working.
     working = or_all(states)
@@ -62,23 +82,15 @@ def solve(states, N):
     # pos_vals[i] possible values state i could represent
     pos_vals = [set() for i in range(N)]
     pos_vals_old = None
-    # when to break out? will this always only take 1 pass? THIS MAY BE BUGGED
-    while pos_vals != pos_vals_old and broken != broken_old:
+    # this condition should be sufficient to know we can't get any more information.
+    while not (pos_vals == pos_vals_old and broken == broken_old):
+        pos_vals_old = copy.deepcopy(pos_vals)
+        broken_old = broken
         for i in range(N):
             pos_vals[i] = get_pos_vals(states[i], working)
-            # remove those inconsistent with the last obtained values
+            # remove those inconsistent with the last obtained values.
             if i != 0:
-                rm_vals, rm_vals_prev = [], []
-                for val in pos_vals[i]:
-                    if val+1 not in pos_vals[i-1]:
-                        rm_vals.append(val)
-                for val in pos_vals[i-1]:
-                    if val-1 not in pos_vals[i]:
-                        rm_vals_prev.append(val)
-                for rval in rm_vals:
-                    pos_vals[i].remove(rval)
-                for rval in rm_vals_prev:
-                    pos_vals[i-1].remove(rval)
+                rm_bad_vals(i, pos_vals)
             # may be no possible values, don't want to continue.
             if pos_vals[i] == set():
                 return None
@@ -86,25 +98,21 @@ def solve(states, N):
             # to a known working one is on in all possible values, then that segment
             # must be broken.
             on_in_all = and_all_dig(pos_vals[i])
-            # this need not be positive (BUGGED)
             new_on = on_in_all & ~working
-            broken_old = broken
             broken |= new_on
-            pos_vals_old = pos_vals
-        # we may still not have enough information to determine the next digits value
-        for pval_set in pos_vals:
-            if len(pval_set) > 1:
-                return None
-        next_val = pos_vals[-1].pop() - 1
-        nv_state = state_dig[next_val]
-        known_bits = working | broken
-        # even if we know the next value, if we don't know whether a segment needed to 
-        # represent it is working or broken we don't know how to represent it.
-        if known_bits & nv_state != nv_state:
+    # we may still not have enough information to determine the next digits value
+    for pval_set in pos_vals:
+        if len(pval_set) > 1:
             return None
-        else:
-            # does this work?
-            return nv_state & working
+    next_val = cyclic_dec(pos_vals[-1].pop())
+    nv_state = state_dig[next_val]
+    known_bits = working | broken
+    # even if we know the next value, if we don't know whether a segment needed to 
+    # represent it is working or broken we don't know how to represent it.
+    if known_bits & nv_state != nv_state:
+        return None
+    else:
+        return nv_state & working
         
 def main():
     ncases = int(input())
@@ -120,4 +128,5 @@ def main():
         else:
             print(f"Case #{case}: {bin(res)[2:].zfill(7)}")
 
-main()
+if __name__ == "__main__":
+    main()
