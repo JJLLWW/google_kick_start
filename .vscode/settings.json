@@ -1,4 +1,5 @@
 {
+    "data_name": "${file}",
     "files.associations": {
         "iostream": "cpp",
         "algorithm": "cpp",
@@ -55,6 +56,8 @@
         "list": "cpp",
         "xhash": "cpp",
         "map": "cpp",
-        "xtree": "cpp"
+        "xtree": "cpp",
+        "set": "cpp",
+        "numeric": "cpp"
     }
 }

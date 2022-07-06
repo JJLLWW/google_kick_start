@@ -16,7 +16,6 @@
 # (!) math.comb is new in Python 3.8 so can't use it here (!)
 
 import math
-# import sys
 
 def comb(n, k):
     return math.factorial(n)//(math.factorial(k)*math.factorial(n-k))
